@@ -22,7 +22,7 @@
 &lt;/ul&gt;
 &lt;h2 id="introduction"&gt;Introduction&lt;/h2&gt;
 &lt;blockquote&gt;
-&lt;p&gt;Written against repository &lt;a href="https://github.com/google-gemini/gemini-cli/tree/main"&gt;Gemini Cli&lt;/a&gt; at revision &lt;code&gt;dc0e0b416592860bdc0846aed0386e1a9637a51e&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;Written against repository &lt;a href="https://github.com/google-gemini/gemini-cli/tree/main"&gt;Gemini CLI&lt;/a&gt; at revision &lt;code&gt;dc0e0b416592860bdc0846aed0386e1a9637a51e&lt;/code&gt;.&lt;/p&gt;
 &lt;/blockquote&gt;
 &lt;h3 id="why-context-matters"&gt;Why Context Matters&lt;/h3&gt;
 &lt;p&gt;This guide is aimed at engineers and architects who build or operate LLM-powered developer tools. Gemini CLI is more than a chat wrapper. It assembles environment facts, project knowledge, user memory, IDE state, and agent-specific instructions into a cohesive &lt;strong&gt;context bundle&lt;/strong&gt;—the structured payload that accompanies every user prompt. The following sections dissect that engine, layer by layer, and show how the pieces interact in code.&lt;/p&gt;</description></item></channel></rss>
