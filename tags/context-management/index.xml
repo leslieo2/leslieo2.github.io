@@ -1,19 +1,28 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?>
-<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
-  <channel>
-    <title>Context Management on Leslie Tech Notes</title>
-    <link>https://leslieo2.github.io/tags/context-management/</link>
-    <description>Recent content in Context Management on Leslie Tech Notes</description>
-    <generator>Hugo</generator>
-    <language>en-us</language>
-    <lastBuildDate>Sat, 18 Oct 2025 16:38:23 +0800</lastBuildDate>
-    <atom:link href="https://leslieo2.github.io/tags/context-management/index.xml" rel="self" type="application/rss+xml" />
-    <item>
-      <title>Dive into Context Engine: Lessons from the Gemini CLI</title>
-      <link>https://leslieo2.github.io/posts/context-engine/</link>
-      <pubDate>Sat, 18 Oct 2025 16:38:23 +0800</pubDate>
-      <guid>https://leslieo2.github.io/posts/context-engine/</guid>
-      <description>&lt;h2 id=&#34;table-of-contents&#34;&gt;Table of Contents&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;a href=&#34;#introduction&#34;&gt;Introduction&lt;/a&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;a href=&#34;#why-context-matters&#34;&gt;Why Context Matters&lt;/a&gt;&lt;/li&gt;&#xA;&lt;li&gt;&lt;a href=&#34;#context-stack-at-a-glance&#34;&gt;Context Stack at a Glance&lt;/a&gt;&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;/li&gt;&#xA;&lt;li&gt;&lt;a href=&#34;#gemini-cli-context-layers&#34;&gt;Gemini CLI Context Layers&lt;/a&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;a href=&#34;#layer-1-environment--workspace-state&#34;&gt;Layer 1: Environment &amp;amp; Workspace State&lt;/a&gt;&lt;/li&gt;&#xA;&lt;li&gt;&lt;a href=&#34;#layer-2-project-memory&#34;&gt;Layer 2: Project Memory&lt;/a&gt;&lt;/li&gt;&#xA;&lt;li&gt;&lt;a href=&#34;#layer-3-tooling--system-persona&#34;&gt;Layer 3: Tooling &amp;amp; System Persona&lt;/a&gt;&lt;/li&gt;&#xA;&lt;li&gt;&lt;a href=&#34;#requestresponse-timeline&#34;&gt;Request/Response Timeline&lt;/a&gt;&lt;/li&gt;&#xA;&lt;li&gt;&lt;a href=&#34;#layer-4-active-ide-context&#34;&gt;Layer 4: Active IDE Context&lt;/a&gt;&lt;/li&gt;&#xA;&lt;li&gt;&lt;a href=&#34;#layer-5-conversation-management&#34;&gt;Layer 5: Conversation Management&lt;/a&gt;&lt;/li&gt;&#xA;&lt;li&gt;&lt;a href=&#34;#layer-6-subagents-in-the-same-ecosystem&#34;&gt;Layer 6: Subagents in the Same Ecosystem&lt;/a&gt;&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;/li&gt;&#xA;&lt;li&gt;&lt;a href=&#34;#context-refresh--unload&#34;&gt;Context Refresh &amp;amp; Unload&lt;/a&gt;&lt;/li&gt;&#xA;&lt;li&gt;&lt;a href=&#34;#design-takeaways&#34;&gt;Design Takeaways&lt;/a&gt;&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;introduction&#34;&gt;Introduction&lt;/h2&gt;&#xA;&lt;blockquote&gt;&#xA;&lt;p&gt;Written against repository revision &lt;code&gt;dc0e0b416592860bdc0846aed0386e1a9637a51e&lt;/code&gt;.&lt;/p&gt;&#xA;&lt;/blockquote&gt;&#xA;&lt;h3 id=&#34;why-context-matters&#34;&gt;Why Context Matters&lt;/h3&gt;&#xA;&lt;p&gt;This guide is aimed at engineers and architects who build or operate LLM-powered developer tools. Gemini CLI is more than a chat wrapper. It assembles environment facts, project knowledge, user memory, IDE state, and agent-specific instructions into a cohesive &lt;strong&gt;context bundle&lt;/strong&gt;—the structured payload that accompanies every user prompt. The following sections dissect that engine, layer by layer, and show how the pieces interact in code.&lt;/p&gt;</description>
-    </item>
-  </channel>
-</rss>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Context Management on Leslie Tech Notes</title><link>https://leslieo2.github.io/tags/context-management/</link><description>Recent content in Context Management on Leslie Tech Notes</description><generator>Hugo</generator><language>en-us</language><lastBuildDate>Sat, 18 Oct 2025 16:38:23 +0800</lastBuildDate><atom:link href="https://leslieo2.github.io/tags/context-management/index.xml" rel="self" type="application/rss+xml"/><item><title>Dive into Context Engine: Lessons from the Gemini CLI</title><link>https://leslieo2.github.io/posts/context-engine/</link><pubDate>Sat, 18 Oct 2025 16:38:23 +0800</pubDate><guid>https://leslieo2.github.io/posts/context-engine/</guid><description>&lt;h2 id="table-of-contents"&gt;Table of Contents&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href="#introduction"&gt;Introduction&lt;/a&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href="#why-context-matters"&gt;Why Context Matters&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="#context-stack-at-a-glance"&gt;Context Stack at a Glance&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;a href="#gemini-cli-context-layers"&gt;Gemini CLI Context Layers&lt;/a&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href="#layer-1-environment--workspace-state"&gt;Layer 1: Environment &amp;amp; Workspace State&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="#layer-2-project-memory"&gt;Layer 2: Project Memory&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="#layer-3-tooling--system-persona"&gt;Layer 3: Tooling &amp;amp; System Persona&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="#requestresponse-timeline"&gt;Request/Response Timeline&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="#layer-4-active-ide-context"&gt;Layer 4: Active IDE Context&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="#layer-5-conversation-management"&gt;Layer 5: Conversation Management&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="#layer-6-subagents-in-the-same-ecosystem"&gt;Layer 6: Subagents in the Same Ecosystem&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;a href="#context-refresh--unload"&gt;Context Refresh &amp;amp; Unload&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="#design-takeaways"&gt;Design Takeaways&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id="introduction"&gt;Introduction&lt;/h2&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Written against repository revision &lt;code&gt;dc0e0b416592860bdc0846aed0386e1a9637a51e&lt;/code&gt;.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h3 id="why-context-matters"&gt;Why Context Matters&lt;/h3&gt;
+&lt;p&gt;This guide is aimed at engineers and architects who build or operate LLM-powered developer tools. Gemini CLI is more than a chat wrapper. It assembles environment facts, project knowledge, user memory, IDE state, and agent-specific instructions into a cohesive &lt;strong&gt;context bundle&lt;/strong&gt;—the structured payload that accompanies every user prompt. The following sections dissect that engine, layer by layer, and show how the pieces interact in code.&lt;/p&gt;</description></item></channel></rss>
