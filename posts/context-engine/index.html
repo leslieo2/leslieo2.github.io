@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    
+    <title>Dive into Context Engine: Lessons from the Gemini CLI | Leslie Tech Notes</title>
+    <meta name="viewport" content="width=device-width,minimum-scale=1">
+    <meta name="description" content="Dissecting the Gemini CLI context engine to show how environment state, memory, IDE signals, and subagents stay in sync.">
+    <meta name="generator" content="Hugo 0.151.2">
+    
+    
+    
+      <meta name="robots" content="index, follow">
+    
+    
+
+    
+<link rel="stylesheet" href="/ananke/css/main.min.efe4d852f731d5d1fbb87718387202a97aafd768cdcdaed0662bbe6982e91824.css" >
+
+
+
+
+    
+
+
+    
+      
+
+    
+
+    
+
+    
+      <link rel="canonical" href="https://leslieo2.github.io/posts/context-engine/">
+    
+
+    <meta property="og:url" content="https://leslieo2.github.io/posts/context-engine/">
+  <meta property="og:site_name" content="Leslie Tech Notes">
+  <meta property="og:title" content="Dive into Context Engine: Lessons from the Gemini CLI">
+  <meta property="og:description" content="Dissecting the Gemini CLI context engine to show how environment state, memory, IDE signals, and subagents stay in sync.">
+  <meta property="og:locale" content="en_us">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="posts">
+    <meta property="article:published_time" content="2025-10-18T16:38:23+08:00">
+    <meta property="article:modified_time" content="2025-10-18T16:38:23+08:00">
+    <meta property="article:tag" content="LLM">
+    <meta property="article:tag" content="Developer Tools">
+    <meta property="article:tag" content="Context Management">
+
+  <meta itemprop="name" content="Dive into Context Engine: Lessons from the Gemini CLI">
+  <meta itemprop="description" content="Dissecting the Gemini CLI context engine to show how environment state, memory, IDE signals, and subagents stay in sync.">
+  <meta itemprop="datePublished" content="2025-10-18T16:38:23+08:00">
+  <meta itemprop="dateModified" content="2025-10-18T16:38:23+08:00">
+  <meta itemprop="wordCount" content="1670">
+  <meta itemprop="keywords" content="LLM,Developer Tools,Context Management">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Dive into Context Engine: Lessons from the Gemini CLI">
+  <meta name="twitter:description" content="Dissecting the Gemini CLI context engine to show how environment state, memory, IDE signals, and subagents stay in sync.">
+
+      
+    
+	
+  </head><body class="ma0 avenir bg-near-white production">
+
+    
+   
+  
+
+  <header>
+    <div class="bg-black">
+      <nav class="pv3 ph3 ph4-ns" role="navigation">
+  <div class="flex-l center items-center justify-between">
+    <a href="/" class="f3 fw2 hover-white white-90 dib no-underline">
+      
+        Leslie Tech Notes
+      
+    </a>
+    <div class="flex-l items-center">
+      
+
+      
+      <div class="ananke-socials"></div>
+
+    </div>
+  </div>
+</nav>
+
+    </div>
+  </header>
+
+
+
+    <main class="pb7" role="main">
+      
+  
+  
+  <article class="flex-l mw8 center ph3 flex-wrap justify-between">
+    <header class="mt4 w-100">
+      <aside class="instapaper_ignoref b helvetica tracked ttu">
+          
+        Posts
+      </aside><div id="sharing" class="mt3 ananke-socials"></div>
+<h1 class="f1 athelas mt3 mb1">Dive into Context Engine: Lessons from the Gemini CLI</h1>
+      
+      
+      
+      <time class="f6 mv4 dib tracked" datetime="2025-10-18T16:38:23+08:00">October 18, 2025</time>
+      
+
+      
+      
+    </header>
+    <div class="nested-copy-line-height lh-copy serif f4 nested-links mid-gray pr4-l w-two-thirds-l"><h2 id="table-of-contents">Table of Contents</h2>
+<ul>
+<li><a href="#introduction">Introduction</a>
+<ul>
+<li><a href="#why-context-matters">Why Context Matters</a></li>
+<li><a href="#context-stack-at-a-glance">Context Stack at a Glance</a></li>
+</ul>
+</li>
+<li><a href="#gemini-cli-context-layers">Gemini CLI Context Layers</a>
+<ul>
+<li><a href="#layer-1-environment--workspace-state">Layer 1: Environment &amp; Workspace State</a></li>
+<li><a href="#layer-2-project-memory">Layer 2: Project Memory</a></li>
+<li><a href="#layer-3-tooling--system-persona">Layer 3: Tooling &amp; System Persona</a></li>
+<li><a href="#requestresponse-timeline">Request/Response Timeline</a></li>
+<li><a href="#layer-4-active-ide-context">Layer 4: Active IDE Context</a></li>
+<li><a href="#layer-5-conversation-management">Layer 5: Conversation Management</a></li>
+<li><a href="#layer-6-subagents-in-the-same-ecosystem">Layer 6: Subagents in the Same Ecosystem</a></li>
+</ul>
+</li>
+<li><a href="#context-refresh--unload">Context Refresh &amp; Unload</a></li>
+<li><a href="#design-takeaways">Design Takeaways</a></li>
+</ul>
+<h2 id="introduction">Introduction</h2>
+<blockquote>
+<p>Written against repository revision <code>dc0e0b416592860bdc0846aed0386e1a9637a51e</code>.</p>
+</blockquote>
+<h3 id="why-context-matters">Why Context Matters</h3>
+<p>This guide is aimed at engineers and architects who build or operate LLM-powered developer tools. Gemini CLI is more than a chat wrapper. It assembles environment facts, project knowledge, user memory, IDE state, and agent-specific instructions into a cohesive <strong>context bundle</strong>—the structured payload that accompanies every user prompt. The following sections dissect that engine, layer by layer, and show how the pieces interact in code.</p>
+<hr>
+<h3 id="context-stack-at-a-glance">Context Stack at a Glance</h3>
+<pre tabindex="0"><code class="language-mermaid" data-lang="mermaid">graph TD
+  subgraph Layers
+    A[Environment &amp; Workspace]
+    B[Project Memory]
+    C[Config &amp; Tool Registry]
+    D[IDE State]
+    E[Conversation History]
+    F[Subagent Customizations]
+  end
+
+  A --&gt; B --&gt; C --&gt; D --&gt; E --&gt; F
+  A --&gt;|getEnvironmentContext| E
+  B --&gt;|User Memory| C
+  C --&gt;|System Prompt| E
+  D --&gt;|IDE Snapshots| E
+  F --&gt;|ContextState templating| E
+</code></pre><p><em>Figure 1. Context artifacts flow from lower layers (environment) toward higher layers (conversation and subagents).</em></p>
+<hr>
+<h2 id="gemini-cli-context-layers">Gemini CLI Context Layers</h2>
+<p>The layers here are presented in ascending order. Each subsequent layer consumes artifacts produced by the previous one, so reading top to bottom mirrors the control flow inside Gemini CLI.</p>
+<h3 id="layer-1-environment--workspace-state">Layer 1: Environment &amp; Workspace State</h3>
+<p>Every chat session opens with a serialized snapshot of the machine and workspace:</p>
+<ul>
+<li><code>getEnvironmentContext</code> collects OS, locale time, and a rendered folder tree for each workspace root, optionally streaming the full repo if <code>fullContext</code> is enabled (<code>packages/core/src/utils/environmentContext.ts:53</code>).</li>
+<li>Those roots are managed through <code>WorkspaceContext</code>, which validates directories, tracks listeners, and handles symlinks (<code>packages/core/src/utils/workspaceContext.ts:19</code>).</li>
+</ul>
+<p>This layer ensures the model always sees “where” it is operating.</p>
+<hr>
+<h3 id="layer-2-project-memory">Layer 2: Project Memory</h3>
+<p>Before the main agent spins up, Gemini CLI aggregates <code>GEMINI.md</code> memories from the user’s home directory, project tree, extensions, and included paths:</p>
+<ul>
+<li>The Gemini CLI wrapper bridges to the core library via <code>loadHierarchicalGeminiMemory</code>, delegating to server-side discovery (<code>packages/cli/src/config/config.ts:394</code>).</li>
+<li>Discovery walks real paths, stops at trust boundaries, and processes <code>@import</code> pragmas for hierarchical memories (<code>packages/core/src/utils/memoryDiscovery.ts:81</code>).</li>
+</ul>
+<p>The resulting memory text enters the system prompt, grounding the model in persistent, curated knowledge.</p>
+<hr>
+<h3 id="layer-3-tooling--system-persona">Layer 3: Tooling &amp; System Persona</h3>
+<p><code>Config</code> ties the environment and memory layers together. During initialization it:</p>
+<ul>
+<li>Instantiates <code>WorkspaceContext</code>, loads memory, and stores settings (<code>packages/core/src/config/config.ts:357</code>).</li>
+<li>Registers core tools, optional subagents, and message-bus integrations, producing a filtered <code>ToolRegistry</code>.</li>
+<li>Computes the system prompt via <code>getCoreSystemPrompt</code>, embedding memory, sandbox warnings, and tooling hints (<code>packages/core/src/core/prompts.ts:74</code>).</li>
+</ul>
+<p>The system prompt is regenerated for every chat start, so configuration changes immediately affect model behavior.</p>
+<hr>
+<h3 id="requestresponse-timeline">Request/Response Timeline</h3>
+<pre tabindex="0"><code class="language-mermaid" data-lang="mermaid">sequenceDiagram
+  participant CLI as CLI
+  participant Config as Config
+  participant GC as GeminiClient
+  participant Turn as Turn.run
+  participant CTS as CoreToolScheduler
+
+  CLI-&gt;&gt;Config: loadCliConfig()
+  Config-&gt;&gt;GC: initialize()
+  CLI-&gt;&gt;GC: sendMessageStream(input)
+  GC-&gt;&gt;Turn: create Turn(prompt_id)
+  Turn-&gt;&gt;GC: pull env + IDE context
+  GC-&gt;&gt;Turn: stream model chunks
+  alt Tool call requested
+    Turn-&gt;&gt;CTS: executeToolCall()
+    CTS--&gt;&gt;Turn: functionResponse parts
+  end
+  Turn--&gt;&gt;GC: turn completed (history updated)
+  GC--&gt;&gt;CLI: emit content / events
+</code></pre><p><em>Figure 2. Request/response flow between Gemini CLI, GeminiClient, the turn loop, and the tool scheduler.</em></p>
+<hr>
+<h3 id="layer-4-active-ide-context">Layer 4: Active IDE Context</h3>
+<p>When IDE mode is enabled, Gemini CLI streams editor state:</p>
+<ul>
+<li><code>ideContextStore</code> normalizes open files, enforces limits, and broadcasts updates (<code>packages/core/src/ide/ideContext.ts:15</code>).</li>
+<li><code>GeminiClient.sendMessageStream</code> injects either a full JSON snapshot or a delta, but only when no tool call is pending (to satisfy Gemini function-call ordering) (<code>packages/core/src/core/client.ts:491</code>).</li>
+</ul>
+<p>IDE context is treated as additive user information, separate from static project memory.</p>
+<hr>
+<h3 id="layer-5-conversation-management">Layer 5: Conversation Management</h3>
+<p><code>GeminiClient</code> orchestrates the conversation as an event loop:</p>
+<ol>
+<li><code>startChat</code> builds the initial history: environment parts, an acknowledgement, and any seed turns (<code>packages/core/src/core/client.ts:225</code>).</li>
+<li>The configured system prompt plus tool list forms the <code>GeminiChat</code> instance (<code>packages/core/src/core/client.ts:233</code>).</li>
+<li><code>sendMessageStream</code> guards against loops, attempts auto compression, applies IDE context, and then hands off to <code>Turn.run</code>.</li>
+<li><code>Turn.run</code> parses streaming events, tracks citations, and queues tool calls (<code>packages/core/src/core/turn.ts:198</code>).</li>
+<li>When a tool call appears, <code>CoreToolScheduler.schedule()</code> executes it and re-encodes the result into <code>functionResponse</code> parts that the same turn consumes (<code>packages/core/src/core/coreToolScheduler.ts:146</code>).</li>
+<li>If the selected model supports “thinking mode,” <code>startChat</code> attaches a <code>thinkingConfig</code> so the API emits <code>&lt;thought&gt;</code> parts alongside normal text (<code>packages/core/src/core/client.ts:252</code>). Those thoughts can be scrubbed later if the history is reused.</li>
+</ol>
+<p>This interplay keeps Gemini CLI in sync with tool output without losing track of the surrounding conversation.</p>
+<hr>
+<h3 id="layer-6-subagents-in-the-same-ecosystem">Layer 6: Subagents in the Same Ecosystem</h3>
+<p>Subagents behave like first-class tools but maintain their own mini-contexts:</p>
+<ul>
+<li><code>SubagentToolWrapper</code> exposes an agent definition through the tool API while sharing the parent <code>Config</code> (<code>packages/core/src/agents/subagent-tool-wrapper.ts:68</code>).</li>
+<li><code>SubAgentScope.createChatObject</code> pulls the same environment context and generates a bespoke system prompt by templating <code>ContextState</code> values (<code>packages/core/src/core/subagent.ts:610</code>).</li>
+<li>Subagents route tool calls back through <code>executeToolCall</code>, enforcing the same safety gates. Their final outputs return via <code>complete_task</code>, ready for the main agent to consume.</li>
+</ul>
+<p>This design ensures subagents benefit from global memory and tools but can customize goals and instructions.</p>
+<hr>
+<h3 id="layer-cheat-sheet">Layer Cheat Sheet</h3>
+<table>
+  <thead>
+      <tr>
+          <th>Layer</th>
+          <th>What it Captures</th>
+          <th>Key Components</th>
+          <th>Why it Matters</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>Environment &amp; Workspace</td>
+          <td>OS metadata, working directories, folder map</td>
+          <td><code>WorkspaceContext</code>, <code>getEnvironmentContext</code></td>
+          <td>Anchors every prompt in the correct filesystem view.</td>
+      </tr>
+      <tr>
+          <td>Project Memory</td>
+          <td>Long-lived project notes (<code>GEMINI.md</code>, extension context files)</td>
+          <td><code>loadHierarchicalGeminiMemory</code>, <code>memoryDiscovery</code></td>
+          <td>Transfers human-curated knowledge into system prompts.</td>
+      </tr>
+      <tr>
+          <td>Tooling &amp; Persona</td>
+          <td>System instructions, allowed tools, policy hooks</td>
+          <td><code>Config</code>, <code>PromptRegistry</code>, <code>ToolRegistry</code></td>
+          <td>Enforces project conventions and safe tool usage.</td>
+      </tr>
+      <tr>
+          <td>IDE Context</td>
+          <td>Live editor focus, selections, open files</td>
+          <td><code>ideContextStore</code>, <code>GeminiClient.sendMessageStream</code></td>
+          <td>Injects developer intent without extra manual prompting.</td>
+      </tr>
+      <tr>
+          <td>Conversation Loop</td>
+          <td>Streaming turns, loop detection, tool scheduling</td>
+          <td><code>GeminiClient</code>, <code>Turn.run</code>, <code>CoreToolScheduler</code></td>
+          <td>Keeps interactive workflows coherent and recoverable.</td>
+      </tr>
+      <tr>
+          <td>Subagents</td>
+          <td>Task-specific delegates sharing global state</td>
+          <td><code>SubagentToolWrapper</code>, <code>SubAgentScope</code></td>
+          <td>Enables parallel investigations while honoring shared context.</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="context-refresh--unload">Context Refresh &amp; Unload</h2>
+<p>Lifelong sessions only stay useful if the engine can shrink or refresh its state on demand. Gemini CLI wires several safeguard paths directly into the runtime:</p>
+<h3 id="compression-pipeline-packagescoresrccoreclientts656">Compression Pipeline (<code>packages/core/src/core/client.ts:656</code>)</h3>
+<ol>
+<li><strong>Budget gate.</strong> <code>tryCompressChat</code> snapshots the “curated” history (user/model turns without invalid responses) and the last prompt’s token count from telemetry (<code>uiTelemetryService.getLastPromptTokenCount()</code>).</li>
+<li><strong>Threshold check.</strong> Unless <code>force</code> is set, the helper compares the token count with <code>contextPercentageThreshold</code> or the default <code>COMPRESSION_TOKEN_THRESHOLD</code>. If the conversation is still under budget, the method bails out early.</li>
+<li><strong>History split.</strong> <code>findCompressSplitPoint</code> chooses a boundary so the newest ~30 % of turns are kept verbatim. Everything before that boundary is marked for summarization.</li>
+<li><strong>Model-assisted summary.</strong> Gemini CLI calls <code>config.getContentGenerator().generateContent(...)</code> with the compressible turns and the compression system prompt returned by <code>getCompressionPrompt()</code> (<code>packages/core/src/core/prompts.ts:420</code>).
+<ul>
+<li>The prompt instructs the model to reason inside a private <code>&lt;scratchpad&gt;</code>, then output a <code>&lt;state_snapshot&gt;</code> XML element containing <code>overall_goal</code>, <code>key_knowledge</code>, <code>file_system_state</code>, <code>recent_actions</code>, and <code>current_plan</code>.</li>
+<li>Because the XML schema is rigid, the summary becomes a drop-in replacement for the trimmed history without leaving ambiguity about what information must survive.</li>
+</ul>
+</li>
+<li><strong>Chat rebuild.</strong> <code>startChat</code> is invoked with three seed messages: the default environment preamble, the model acknowledgement, and the generated summary, followed by the preserved tail of the original history. Because <code>startChat</code> always replays <code>getEnvironmentContext</code>, the resulting conversation carries the same base context but with a shorter transcript.</li>
+<li><strong>Fallback tracking.</strong> If the new token estimate still exceeds the original count, <code>hasFailedCompressionAttempt</code> is toggled to avoid repeated expansions until the user explicitly forces compression.</li>
+</ol>
+<h3 id="hard-reset-packagescoresrccoreclientts198">Hard Reset (<code>packages/core/src/core/client.ts:198</code>)</h3>
+<p>Calling <code>resetChat()</code> delegates to <code>startChat()</code> without any extra seed messages. This flushes history, resets the <code>forceFullIdeContext</code> flag (ensuring the next request re-sends the full IDE snapshot), and reinstalls the latest system prompt and tool declarations. It’s effectively a “soft restart” of the agent without touching process state.</p>
+<h3 id="thought-hygiene-packagescoresrccoregeminichatts432">Thought Hygiene (<code>packages/core/src/core/geminiChat.ts:432</code>)</h3>
+<p>Some Gemini models attach <code>thoughtSignature</code> metadata to parts when “thinking mode” is enabled. <code>GeminiChat.stripThoughtsFromHistory()</code> clones each stored turn and drops that field so the private reasoning chain never leaks into subsequent prompts or logs. <code>GeminiClient.stripThoughtsFromHistory()</code> exposes the same cleanup hook to higher layers when switching auth providers or replaying history.</p>
+<h3 id="workspace--ide-refresh-packagescoresrcideidecontextts88-packagescoresrcutilsworkspacecontextts112">Workspace &amp; IDE Refresh (<code>packages/core/src/ide/ideContext.ts:88</code>, <code>packages/core/src/utils/workspaceContext.ts:112</code>)</h3>
+<ul>
+<li><code>ideContextStore.clear()</code> wipes the cached editor context and notifies subscribers—<code>GeminiClient.sendMessageStream</code> will then ship the next full snapshot when the model is ready for a user message.</li>
+<li><code>WorkspaceContext.setDirectories()</code> validates new roots, swaps the internal <code>Set</code>, and emits <code>onDirectoriesChanged</code> notifications that ultimately feed into the next <code>getEnvironmentContext()</code> run. Any listeners (diagnostics, watchers, etc.) can respond immediately.</li>
+</ul>
+<p>Together, these routines keep the context engine deterministic, budget-aware, and resilient across long-running sessions.</p>
+<hr>
+<h2 id="design-takeaways">Design Takeaways</h2>
+<p>Even though the layers look discrete, they feed into each other through shared services:</p>
+<pre tabindex="0"><code class="language-mermaid" data-lang="mermaid">graph LR
+  WC[WorkspaceContext] --&gt; EC[getEnvironmentContext]
+  EC --&gt; Hist[Initial Chat History]
+  MEM[Hierarchical Memory] --&gt;|userMemory| Config
+  Config --&gt;|System Prompt| Hist
+  Config --&gt;|Tool Registry| GC[GeminiClient]
+  IDE[ideContextStore] --&gt; GC
+  GC --&gt; Hist
+  Hist --&gt; Turn
+  Turn --&gt; CTS[CoreToolScheduler]
+  CTS --&gt; Hist
+  Config --&gt; SubConfig[SubAgent Scope]
+  SubConfig --&gt; Hist
+</code></pre><p><em>Figure 3. Shared services and stores propagate context updates across layers.</em></p>
+<ul>
+<li><code>WorkspaceContext</code> supplies directory roots; <code>getEnvironmentContext</code> reads them and produces the opening user parts.</li>
+<li>Collected memory text is stored on <code>Config</code> as <code>userMemory</code>, then embedded by <code>getCoreSystemPrompt</code> when the session starts.</li>
+<li><code>GeminiClient</code> pulls both the environment parts and system prompt, attaches tool declarations from the shared <code>ToolRegistry</code>, and streams IDE deltas into the same history.</li>
+<li>Tool calls funnel through <code>CoreToolScheduler</code>, whose function responses are appended as user messages, enriching context for the next turn.</li>
+<li>Subagents reuse the parent <code>Config</code>, so their environment and memory mirror the main agent while their prompts are templated via <code>ContextState</code>; their outputs return to the shared history.</li>
+<li>Compression (<code>tryCompressChat</code>), resets, and IDE clears all operate via <code>Config</code>/<code>GeminiClient</code>, ensuring that when a layer changes the others see the new state.</li>
+</ul>
+<ol>
+<li><strong>Layer context top-down.</strong> Start from immutable environment facts, add project memory, then overlay dynamic user activity. Each layer should be independently refreshable.</li>
+<li><strong>Centralize configuration.</strong> A <code>Config</code> object that owns the workspace, tools, memory, and prompts becomes the single source of truth for the entire agent ecosystem.</li>
+<li><strong>Treat subagents as peers.</strong> Give them the same context bootstrap but allow instruction specialization. Wrapping them as tools lets the main agent orchestrate complex workflows.</li>
+<li><strong>Plan for cleanup.</strong> Compression, reset, and pruning functions are essential; without them, context quality degrades over time.</li>
+</ol>
+<hr>
+<p>By studying Gemini CLI’s context engine, you can architect systems that remain coherent even as they juggle user memories, source-tree insight, IDE states, and multi-agent collaboration. The key is disciplined layering and relentless control over what the model sees at each turn.</p>
+<ul class="pa0">
+  
+   <li class="list di">
+     <a href="/tags/llm/" class="link f5 grow br-pill ba ph3 pv2 mb2 dib black sans-serif no-underline">LLM</a>
+   </li>
+  
+   <li class="list di">
+     <a href="/tags/developer-tools/" class="link f5 grow br-pill ba ph3 pv2 mb2 dib black sans-serif no-underline">Developer Tools</a>
+   </li>
+  
+   <li class="list di">
+     <a href="/tags/context-management/" class="link f5 grow br-pill ba ph3 pv2 mb2 dib black sans-serif no-underline">Context Management</a>
+   </li>
+  
+</ul>
+<div class="mt6 instapaper_ignoref">
+      
+      
+      </div>
+    </div>
+
+    <aside class="w-30-l mt6-l">
+
+
+
+
+</aside>
+
+  </article>
+
+    </main>
+    <footer class="bg-black bottom-0 w-100 pa3" role="contentinfo">
+  <div class="flex justify-between">
+  <a class="f4 fw4 hover-white white-70 dn dib-ns pv2 ph3 no-underline" href="https://leslieo2.github.io/" >
+    &copy;  Leslie Tech Notes 2025 
+  </a>
+    <div><div class="ananke-socials"></div>
+</div>
+  </div>
+</footer>
+
+  </body>
+</html>
