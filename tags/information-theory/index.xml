@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Essays on Leslie Liu</title><link>https://leslieo2.github.io/categories/essays/</link><description>Recent content in Essays on Leslie Liu</description><generator>Hugo</generator><language>en-us</language><lastBuildDate>Sun, 19 Apr 2026 00:00:00 +0800</lastBuildDate><atom:link href="https://leslieo2.github.io/categories/essays/index.xml" rel="self" type="application/rss+xml"/><item><title>拆解 Vibe Coding：一个信息论视角</title><link>https://leslieo2.github.io/posts/vibe-coding-information-theory/</link><pubDate>Sun, 19 Apr 2026 00:00:00 +0800</pubDate><guid>https://leslieo2.github.io/posts/vibe-coding-information-theory/</guid><description>&lt;h2 id="从一句咒语开始"&gt;从一句咒语开始&lt;/h2&gt;
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Information Theory on Leslie Liu</title><link>https://leslieo2.github.io/tags/information-theory/</link><description>Recent content in Information Theory on Leslie Liu</description><generator>Hugo</generator><language>en-us</language><lastBuildDate>Sun, 19 Apr 2026 00:00:00 +0800</lastBuildDate><atom:link href="https://leslieo2.github.io/tags/information-theory/index.xml" rel="self" type="application/rss+xml"/><item><title>拆解 Vibe Coding：一个信息论视角</title><link>https://leslieo2.github.io/posts/vibe-coding-information-theory/</link><pubDate>Sun, 19 Apr 2026 00:00:00 +0800</pubDate><guid>https://leslieo2.github.io/posts/vibe-coding-information-theory/</guid><description>&lt;h2 id="从一句咒语开始"&gt;从一句咒语开始&lt;/h2&gt;
 &lt;p&gt;动念写这篇文章，是因为最近看到了一些具有神秘色彩的言论，比如说第一性原理咒语：一些人声称，如果在Vibe Coding 的时候，让模型基于第一性原理思考，会获得更好的效果。听起来，“第一性原理”好像变成了一个魔法咒语，具有了点石成金的魔力。那么我今天也试着用第一性原理，从香农信息论的视角，去拆解所谓的Vibe Coding。&lt;/p&gt;
 &lt;h2 id="信息论视角下的软件"&gt;信息论视角下的软件&lt;/h2&gt;
 &lt;p&gt;根据信息论的基本观点，信息被用于消除系统中的不确定性，可以把软件建模为“有效信息”的集合。这里的有效信息，指的是构成该软件核心语义、并使其区别于其他软件的那部分信息。&lt;/p&gt;
@@ -20,22 +20,4 @@
 &lt;h2 id="第二类场景是降低系统中的信息熵"&gt;第二类场景是“降低系统中的信息熵”&lt;/h2&gt;
 &lt;p&gt;在长期演化的软件系统中，往往会积累大量冗余代码、兼容性代码以及已经标记为 deprecated 的遗留逻辑。这些代码虽然存在于代码库中，但并不再对产品提供有价值的有效信息。在这种场景下，可以借助 Code Agent 对系统进行重构与清理。它能够在不改变核心语义的前提下，压缩系统的冗余结构，从而降低整体复杂度。这里的操作同样不引入新有效信息，而是移除无效信息。&lt;/p&gt;
 &lt;h2 id="第三类场景是-新人上手"&gt;第三类场景是 “新人上手”&lt;/h2&gt;
-&lt;p&gt;面对一个大型代码库，新人往往缺乏对系统的整体认知。此时，可以利用 Code Agent 对代码库进行结构化解读。值得注意的是，这本质上是对已有信息的再组织，而非信息的创造。Code Agent 提供的是“二次加工的信息”，其价值在于降低理解成本，而非新增有效信息。&lt;/p&gt;</description></item><item><title>人是目的，不是手段</title><link>https://leslieo2.github.io/posts/human-as-end-not-means/</link><pubDate>Sat, 18 Apr 2026 00:00:00 +0800</pubDate><guid>https://leslieo2.github.io/posts/human-as-end-not-means/</guid><description>&lt;blockquote&gt;
-&lt;p&gt;“人是目的，不是手段。”&lt;/p&gt;
-&lt;p&gt;康德&lt;/p&gt;
-&lt;/blockquote&gt;
-&lt;p&gt;开头引用康德的名言，来表达最近一年高强度 vibe coding 之后的感受。&lt;/p&gt;
-&lt;p&gt;长久以来，大部分的程序员充当了机器与现实世界的翻译器。&lt;/p&gt;
-&lt;p&gt;他们聆听来自客户/产品经理的需求，把这些需求根据自己的理解，翻译成机器能运行的代码。&lt;/p&gt;
-&lt;p&gt;这算得上一种比较少有且需刻意练习才能拥有的能力，所以现实世界也给了这种能力不菲的回报。&lt;/p&gt;
-&lt;p&gt;大部分程序员对此也甘之若饴。虽然他们被异化成了翻译工具，做着自己不喜欢、也不知道有什么意义的工作。&lt;/p&gt;
-&lt;p&gt;AI 的出现改变了一切。&lt;/p&gt;
-&lt;p&gt;当人们发现了更廉价、更稳定的工具时，第一时间是恐惧：把自己降格、异化为工具的人们，在恐惧另一种工具替代他们，这本身也殊为讽刺。&lt;/p&gt;
-&lt;p&gt;可是，人是目的，不是手段。人不该被异化为工具，更不该工具化自我。&lt;/p&gt;
-&lt;p&gt;褪去了工具属性的人，体验到了失重感。他们没有成为“目的”，反而陷入迷茫。&lt;/p&gt;
-&lt;p&gt;AI 从来就没有取代人，它只是拿走了一个长期被误认为是“自我”的外壳。&lt;/p&gt;
-&lt;p&gt;人需要找到壳内的自我。&lt;/p&gt;
-&lt;p&gt;结尾再引用两千年前孔子类似的思考：&lt;/p&gt;
-&lt;blockquote&gt;
-&lt;p&gt;“君子不器。”&lt;/p&gt;
-&lt;/blockquote&gt;</description></item></channel></rss>
+&lt;p&gt;面对一个大型代码库，新人往往缺乏对系统的整体认知。此时，可以利用 Code Agent 对代码库进行结构化解读。值得注意的是，这本质上是对已有信息的再组织，而非信息的创造。Code Agent 提供的是“二次加工的信息”，其价值在于降低理解成本，而非新增有效信息。&lt;/p&gt;</description></item></channel></rss>
